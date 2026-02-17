@@ -1,0 +1,69 @@
+{
+  "model": "USER_REPORT",
+  "version": "1.0.0",
+  "schema": {
+    "baseTable": {
+      "name": "users",
+      "alias": "u"
+    },
+    "joins": [
+      {
+        "type": "LEFT",
+        "table": {
+          "name": "addresses",
+          "alias": "a"
+        },
+        "conditions": [
+          {
+            "left": "u.id",
+            "operator": "=",
+            "right": "a.user_id"
+          }
+        ]
+      },
+      {
+        "type": "INNER",
+        "table": {
+          "name": "orders",
+          "alias": "o"
+        },
+        "conditions": [
+          {
+            "left": "u.id",
+            "operator": "=",
+            "right": "o.user_id"
+          }
+        ]
+      }
+    ]
+  },
+  "fields": {
+    "user_id": {
+      "type": "field",
+      "path": "u.id"
+    },
+    "full_name": {
+      "type": "raw",
+      "sql": "u.first_name || ' ' || u.last_name"
+    },
+    "email": {
+      "type": "field",
+      "path": "u.email"
+    },
+    "city": {
+      "type": "function",
+      "name": "COALESCE",
+      "args": ["a.city", "Unknown"]
+    },
+    "country": {
+      "type": "function",
+      "name": "UPPER",
+      "args": ["a.country"]
+    },
+    "total_orders": {
+      "type": "function",
+      "name": "COUNT",
+      "args": ["o.id"]
+    }
+  }
+}

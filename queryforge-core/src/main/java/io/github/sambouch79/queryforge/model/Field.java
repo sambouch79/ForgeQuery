@@ -17,9 +17,9 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = SimpleField.class, name = "field"),
-    @JsonSubTypes.Type(value = FunctionField.class, name = "function"),
-    @JsonSubTypes.Type(value = RawField.class, name = "raw")
+        @JsonSubTypes.Type(value = SimpleField.class, name = "field"),
+        @JsonSubTypes.Type(value = FunctionField.class, name = "function"),
+        @JsonSubTypes.Type(value = RawField.class, name = "raw")
 })
 public sealed interface Field permits SimpleField, FunctionField, RawField {
     

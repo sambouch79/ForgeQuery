@@ -1,5 +1,7 @@
 package io.github.sambouch79.queryforge.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
@@ -24,8 +26,14 @@ public final class RawField implements Field {
     /**
      * Raw SQL expression
      */
-    String sql;
-    
+    private final String sql;
+
+    @JsonCreator
+    public RawField(@JsonProperty("sql") String sql) {
+        this.sql = sql;
+    }
+
+
     @Override
     public String toSQL() {
         return sql;

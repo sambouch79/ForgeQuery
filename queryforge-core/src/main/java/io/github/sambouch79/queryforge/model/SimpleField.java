@@ -1,5 +1,7 @@
 package io.github.sambouch79.queryforge.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
@@ -23,7 +25,11 @@ public final class SimpleField implements Field {
     /**
      * Path to the column (e.g., "i.NOM_INDIVIDU" or "d.CODE_DOSSIER")
      */
-    String path;
+    private final String path;
+    @JsonCreator
+    public SimpleField(@JsonProperty("path") String path) {
+        this.path = path;
+    }
     
     @Override
     public String toSQL() {

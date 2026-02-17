@@ -1,5 +1,7 @@
 package io.github.sambouch79.queryforge.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 
@@ -29,12 +31,21 @@ public final class FunctionField implements Field {
     /**
      * Function name (e.g., "NVL", "COALESCE", "UPPER")
      */
-    String name;
+    private final String name;
     
     /**
      * Function arguments (can be column names or literals)
      */
-    List<String> args;
+    private final List<String> args;
+
+    @JsonCreator
+    public FunctionField(
+            @JsonProperty("name") String name,
+            @JsonProperty("args") List<String> args
+    ) {
+        this.name = name;
+        this.args = args;
+    }
     
     @Override
     public String toSQL() {
