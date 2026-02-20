@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "schema": {
     "baseTable": {
+      "type": "table",
       "name": "users",
       "alias": "u"
     },
@@ -10,6 +11,7 @@
       {
         "type": "LEFT",
         "table": {
+          "type": "table",
           "name": "addresses",
           "alias": "a"
         },
@@ -24,6 +26,7 @@
       {
         "type": "INNER",
         "table": {
+          "type": "table",
           "name": "orders",
           "alias": "o"
         },

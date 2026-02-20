@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  *
  * @author Sam
  */
-public class Table {
+public final class Table implements FromSource {
 
     private final String name;
     private final String alias;

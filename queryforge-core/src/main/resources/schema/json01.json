@@ -1,0 +1,29 @@
+{
+  "model": "STATUT_REPORT",
+  "version": "1.0.0",
+  "schema": {
+    "baseTable": { "type": "table", "name": "INDIVIDU", "alias": "i" },
+    "joins": []
+  },
+  "fields": {
+    "nom": { "type": "field", "path": "i.NOM_INDIVIDU" },
+    "statutLibelle": {
+      "type": "case",
+      "whens": [
+        {
+          "when": { "type": "simple", "field": "i.STATUT", "op": "=", "value": "A" },
+          "then": "Actif"
+        },
+        {
+          "when": { "type": "simple", "field": "i.STATUT", "op": "=", "value": "S" },
+          "then": "Suspendu"
+        },
+        {
+          "when": { "type": "is_null", "field": "i.STATUT", "negated": false },
+          "then": "Non défini"
+        }
+      ],
+      "else": "Inconnu"
+    }
+  }
+}

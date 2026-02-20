@@ -1,0 +1,42 @@
+{
+  "model": "STATS_CONTRATS",
+  "version": "1.0.0",
+  "schema": {
+    "baseTable": {"type": "table", "name": "INDIVIDU", "alias": "i" },
+    "joins": [
+      {
+        "type": "INNER",
+        "table": { "name": "DOSSIER", "alias": "d" },
+        "conditions": [
+          { "left": "i.ID_INDIVIDU", "right": "d.ID_INDIVIDU" }
+        ]
+      }
+    ],
+    "filters": {
+      "type": "and",
+      "conditions": [
+        { "type": "simple",  "field": "i.STATUT",          "op": "=",    "value": "ACTIF" },
+        { "type": "is_null", "field": "i.DATE_SUPPRESSION", "negated": false },
+        { "type": "between", "field": "d.ANNEE",            "from": "2020", "to": "2024" }
+      ]
+    },
+    "groupBy": ["i.TYPE_CONTRAT", "d.ANNEE"],
+    "having": {
+      "type": "simple",
+      "field": "COUNT(*)",
+      "op": ">",
+      "value": "10"
+    },
+    "orderBy": [
+      { "field": "d.ANNEE",        "direction": "DESC" },
+      { "field": "i.TYPE_CONTRAT", "direction": "ASC" }
+    ],
+    "limit": 100,
+    "offset": 0
+  },
+  "fields": {
+    "typeContrat": { "type": "field", "path": "i.TYPE_CONTRAT" },
+    "annee":       { "type": "field", "path": "d.ANNEE" },
+    "total":       { "type": "raw",   "sql": "COUNT(*)" }
+  }
+}

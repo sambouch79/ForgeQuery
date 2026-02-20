@@ -1,0 +1,16 @@
+{
+  "model": "INVALID_TEST",
+  "schema": {
+    "baseTable": {
+      "type": "table",
+      "name": "users",
+      "alias": "u"
+    }
+  },
+  "fields": {
+    "id": {
+      "type": "field",
+      "path": "u.id"
+    }
+  }
+}

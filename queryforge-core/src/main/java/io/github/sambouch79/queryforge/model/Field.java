@@ -19,9 +19,11 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 @JsonSubTypes({
         @JsonSubTypes.Type(value = SimpleField.class, name = "field"),
         @JsonSubTypes.Type(value = FunctionField.class, name = "function"),
-        @JsonSubTypes.Type(value = RawField.class, name = "raw")
+        @JsonSubTypes.Type(value = RawField.class, name = "raw"),
+        @JsonSubTypes.Type(value = SubqueryField.class, name = "subquery"),
+        @JsonSubTypes.Type(value = CaseField.class,     name = "case")
 })
-public sealed interface Field permits SimpleField, FunctionField, RawField {
+public sealed interface Field permits CaseField, FunctionField, RawField, SimpleField, SubqueryField  {
     
     /**
      * Convert this field to SQL expression

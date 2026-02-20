@@ -33,8 +33,9 @@ class MappingLoaderTest {
         assertThat(mapping.getFields().get("city")).isInstanceOf(FunctionField.class);
 
         // Vérifier le schema
-        assertThat(mapping.getSchema().getBaseTable().getName()).isEqualTo("users");
-        assertThat(mapping.getSchema().getBaseTable().getAlias()).isEqualTo("u");
+        Table baseTable = (Table) mapping.getSchema().getBaseTable();
+        assertThat(baseTable.getName()).isEqualTo("users");
+        assertThat(baseTable.getAlias()).isEqualTo("u");
         assertThat(mapping.getSchema().getJoins()).hasSize(2);
 
         // Vérifier les joins

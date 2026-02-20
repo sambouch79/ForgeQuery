@@ -16,6 +16,7 @@
 
     <modules>
        <module>queryforge-core</module>
+        <module>queryforge-cli</module>
     </modules>
 
     <properties>
@@ -72,6 +73,14 @@
                 <artifactId>ojdbc11</artifactId>
                 <version>${oracle.version}</version>
             </dependency>
+
+            <!-- Picocli -->
+            <dependency>
+                <groupId>info.picocli</groupId>
+                <artifactId>picocli</artifactId>
+                <version>4.7.6</version>
+            </dependency>
+
 
             <!-- Testing -->
             <dependency>
