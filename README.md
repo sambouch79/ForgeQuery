@@ -1,222 +1,281 @@
-# ⚡ QueryForge - Dynamic SQL Query Generator
+# QueryForge
 
-> Transform JSON configurations into powerful SQL queries
+**Dynamic SQL Query Generator from JSON configuration**
 
-**Status:** 🏗️ Under Development (v1.0.0-SNAPSHOT)  
-**Author:** Sam Bouchenafa (@sambouch79)  
-**Motivation:** Real-world challenges at CNAV - implementing best practices that were initially prototyped but not fully realized
+QueryForge generates SQL SELECT queries from simple JSON mapping files — no code required. Define your tables, joins, conditions, and fields in JSON, and QueryForge produces clean, validated SQL.
 
 ---
 
-## 🎯 What is QueryForge?
+## Features
 
-QueryForge is a Java library that generates SQL queries from JSON configuration files, eliminating the need to hardcode SQL in your application.
-
-### The Problem You Had
-
-```java
-// Traditional approach at CNAV
-public class CourrierOD2Mapper {
-    public String generateSQL(int individuId) {
-        return "SELECT " +
-            "NVL(a.COMPL_DEST, d.COMPL_DEST) AS APO02, " +
-            "CASE i.SEXE WHEN 0 THEN 'Monsieur' ELSE 'Madame' END AS DES06, " +
-            // ... 200 lines of hardcoded SQL
-            "FROM CIVI.INDIVIDU i " +
-            "LEFT JOIN CIVI.DOSSIER d ON i.INDEX_DOSSIER = d.INDEX_DOSSIER " +
-            // ... 10 more joins
-            "WHERE i.INDEX_INDIVIDU = ?";
-    }
-}
-// Repeat for EVERY document type = Maintenance nightmare!
-```
-
-### The Solution You Wanted
-
-```json
-{
-  "model": "OD2",
-  "version": "1.0.0",
-  "schema": {
-    "baseTable": { "n": "CIVI.INDIVIDU", "alias": "i" },
-    "joins": [
-      {
-        "type": "LEFT",
-        "table": { "n": "CIVI.DOSSIER", "alias": "d" },
-        "conditions": [
-          { "left": "i.INDEX_DOSSIER", "operator": "=", "right": "d.INDEX_DOSSIER" }
-        ]
-      }
-    ]
-  },
-  "fields": {
-    "APO02": {
-      "type": "function",
-      "n": "NVL",
-      "args": ["a.COMPL_DEST", "d.COMPL_DEST"]
-    },
-    "DES06": {
-      "type": "raw",
-      "sql": "CASE i.SEXE WHEN 0 THEN 'Monsieur' ELSE 'Madame' END"
-    }
-  }
-}
-```
-
-**Benefits:**
-- ✅ No more SQL in Java code
-- ✅ JSON Schema validation (the feature you wanted!)
-- ✅ Semantic versioning (the feature you wanted!)
-- ✅ New document type = New JSON file, zero deployment
-- ✅ Configuration managed by business analysts
+- **Full SQL generation** — SELECT, FROM, JOIN, WHERE, GROUP BY, HAVING, ORDER BY, LIMIT/OFFSET
+- **Rich condition support** — simple comparisons, IN/NOT IN, IS NULL, BETWEEN, AND/OR nesting, subqueries
+- **Field types** — simple columns, SQL functions, CASE WHEN expressions, raw SQL, scalar subqueries
+- **JSON validation** — JSON Schema validation before generation
+- **Multiple interfaces** — Java library, CLI tool, REST API
+- **Oracle compatible** — designed for enterprise Oracle environments
 
 ---
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 queryforge/
-├── queryforge-core/       # ⚡ Core library (use this!)
-├── queryforge-cli/        # 🖥️ Command-line tool
-├── queryforge-server/     # 🌐 REST API server
-└── docs/                  # 📚 Documentation
+├── queryforge-core/    ← Java library (domain model, generator, validator)
+├── queryforge-cli/     ← Command line tool (fat JAR)
+└── queryforge-api/     ← REST API (Quarkus)
 ```
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
-### Prerequisites
-- Java 21+
-- Maven 3.9+
-- PostgreSQL (for development)
+### As a Java Library
 
-### Installation
-
-```bash
-# Clone
-git clone https://github.com/sambouch79/queryforge.git
-cd queryforge
-
-# Build
-mvn clean install
-
-# Run tests
-mvn test
-```
-
-### Library Usage
+Add the dependency to your `pom.xml`:
 
 ```xml
 <dependency>
     <groupId>io.github.sambouch79</groupId>
     <artifactId>queryforge-core</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0</version>
 </dependency>
 ```
 
+Generate SQL from a JSON file:
+
 ```java
-// Load mapping from JSON
-Mapping mapping = MappingLoader.load("my-mapping.json");
+MappingLoader loader = new MappingLoader();
+Mapping mapping = loader.loadFromFile(Path.of("mapping.json"));
 
-// Generate SQL
 SQLGenerator generator = new SQLGenerator();
-String sql = generator.generate(mapping, params);
+String sql = generator.generate(mapping);
 
-// Execute
-List<Map<String, Object>> results = jdbcTemplate.queryForList(sql, params);
+System.out.println(sql);
+```
+
+Or build a mapping programmatically:
+
+```java
+Mapping mapping = Mapping.builder()
+    .model("USER_REPORT")
+    .version(Version.parse("1.0.0"))
+    .schema(Schema.of(
+        Table.of("INDIVIDU", "i"),
+        List.of(Join.left(Table.of("DOSSIER", "d"), JoinCondition.eq("i.ID", "d.ID_INDIVIDU"))),
+        CompositeCondition.and(List.of(
+            SimpleCondition.of("i.STATUT", "=", "ACTIF"),
+            IsNullCondition.isNull("i.DATE_SUPPRESSION")
+        ))
+    ))
+    .fields(Map.of(
+        "nom",    SimpleField.of("i.NOM_INDIVIDU"),
+        "statut", CaseField.of(List.of(
+            WhenClause.of(SimpleCondition.of("i.STATUT", "=", "A"), "Actif"),
+            WhenClause.of(SimpleCondition.of("i.STATUT", "=", "S"), "Suspendu")
+        ), "Inconnu")
+    ))
+    .build();
+
+String sql = new SQLGenerator().generate(mapping);
+```
+
+**Output:**
+```sql
+SELECT
+  i.NOM_INDIVIDU AS nom,
+  CASE
+    WHEN i.STATUT = 'A' THEN 'Actif'
+    WHEN i.STATUT = 'S' THEN 'Suspendu'
+    ELSE 'Inconnu'
+  END AS statut
+FROM INDIVIDU i
+LEFT JOIN DOSSIER d ON i.ID = d.ID_INDIVIDU
+WHERE (i.STATUT = 'ACTIF' AND i.DATE_SUPPRESSION IS NULL)
 ```
 
 ---
 
-## ✨ Features
+### CLI Tool
 
-### ✅ Implemented
-- Semantic versioning (`Version` class)
-- Field types: `SimpleField`, `FunctionField`, `RawField`
-- Schema modeling: `Table`, `Join`, `JoinCondition`
-- Comprehensive unit tests (11 tests passing)
-
-### 🚧 In Progress
-- **JSON Schema validation** (the feature they ignored!)
-- **Version compatibility checks** (the feature they ignored!)
-- SQL generation engine
-- Query optimization
-
-### 📋 Planned
-- Output formatters (XML, PDF, JSON)
-- CLI tool
-- REST API
-- PostgreSQL + Oracle support
-
----
-
-## 🧪 Running Tests
+Build the fat JAR:
 
 ```bash
-# All tests
-mvn test
+mvn package -pl queryforge-cli
+```
 
-# Specific test
-mvn test -Dtest=VersionTest
+Use it:
 
-# With coverage
-mvn test jacoco:report
+```bash
+# Generate SQL from a mapping file
+java -jar queryforge-cli/target/queryforge-cli.jar generate --file mapping.json
+
+# Generate and save to file
+java -jar queryforge-cli/target/queryforge-cli.jar generate --file mapping.json --output result.sql
+
+# Validate a single file
+java -jar queryforge-cli/target/queryforge-cli.jar validate --file mapping.json
+
+# Validate all JSON files in a directory
+java -jar queryforge-cli/target/queryforge-cli.jar validate --dir ./mappings/
+
+# Help
+java -jar queryforge-cli/target/queryforge-cli.jar --help
 ```
 
 ---
 
-## 🎯 Why This Project Exists
+### REST API
 
-At CNAV, I created a POC for dynamic document generation that solved real production problems. The POC included:
-- JSON Schema validation
-- Semantic versioning
-- Query optimization
+Start the API:
 
-**What happened:** The POC was handed to a contractor who implemented it WITHOUT these critical features, despite them being in the specs.
+```bash
+cd queryforge-api
+mvn quarkus:dev
+```
 
-**This project:** Is the CORRECT implementation with ALL the best practices I originally proposed.
+Endpoints:
 
-**Goal:** Create a production-ready library that showcases proper software engineering:
-- Type-safe configuration
-- Comprehensive testing
-- Clean architecture
-- Proper documentation
+```bash
+# Health check
+curl http://localhost:8080/api/health
 
----
+# Validate a mapping
+curl -X POST http://localhost:8080/api/validate \
+  -H "Content-Type: application/json" \
+  -d @mapping.json
 
-## 📊 Roadmap
+# Generate SQL
+curl -X POST http://localhost:8080/api/generate \
+  -H "Content-Type: application/json" \
+  -d @mapping.json
+```
 
-| Phase | Timeline | Deliverables |
-|-------|----------|--------------|
-| **Phase 1** ✅ | Week 1-2 | Project setup, domain model, unit tests |
-| **Phase 2** 🚧 | Week 3-4 | JSON Schema validation, SQL generation |
-| **Phase 3** | Week 5-6 | Query optimization, PostgreSQL tests |
-| **Phase 4** | Week 7-8 | Oracle support, CLI, REST API |
-| **Phase 5** | Week 9-10 | Documentation, v1.0.0 release |
-
----
-
-## 🤝 Contributing
-
-This is a personal project, but feedback and suggestions are welcome!
+Swagger UI available at: `http://localhost:8080/swagger`
 
 ---
 
-## 📄 License
+## Mapping JSON Format
 
-Apache License 2.0
+A mapping file has 4 sections: `model`, `version`, `schema`, and `fields`.
+
+```json
+{
+  "model": "MY_REPORT",
+  "version": "1.0.0",
+  "schema": {
+    "baseTable": { "type": "table", "name": "INDIVIDU", "alias": "i" },
+    "joins": [
+      {
+        "type": "LEFT",
+        "table": { "name": "DOSSIER", "alias": "d" },
+        "conditions": [{ "left": "i.ID", "operator": "=", "right": "d.ID_INDIVIDU" }]
+      }
+    ],
+    "filters": {
+      "type": "and",
+      "conditions": [
+        { "type": "simple",  "field": "i.STATUT",          "op": "=",    "value": "ACTIF" },
+        { "type": "is_null", "field": "i.DATE_SUPPRESSION", "negated": false },
+        { "type": "in",      "field": "i.TYPE",            "values": ["CDI", "CDD"] },
+        { "type": "between", "field": "d.ANNEE",           "from": "2020", "to": "2024" }
+      ]
+    },
+    "groupBy":  ["i.TYPE", "d.ANNEE"],
+    "having":   { "type": "simple", "field": "COUNT(*)", "op": ">", "value": "5" },
+    "orderBy":  [{ "field": "d.ANNEE", "direction": "DESC" }],
+    "limit":    100,
+    "offset":   0
+  },
+  "fields": {
+    "nom":    { "type": "field",    "path": "i.NOM_INDIVIDU" },
+    "annee":  { "type": "field",    "path": "d.ANNEE" },
+    "total":  { "type": "raw",      "sql": "COUNT(*)" },
+    "ville":  { "type": "function", "name": "NVL", "args": ["i.VILLE", "Inconnue"] },
+    "statut": {
+      "type": "case",
+      "whens": [
+        { "when": { "type": "simple", "field": "i.STATUT", "op": "=", "value": "A" }, "then": "Actif" },
+        { "when": { "type": "simple", "field": "i.STATUT", "op": "=", "value": "S" }, "then": "Suspendu" }
+      ],
+      "else": "Inconnu"
+    }
+  }
+}
+```
+
+### Field Types
+
+| Type | Description | Example |
+|---|---|---|
+| `field` | Direct column reference | `{ "type": "field", "path": "i.NOM" }` |
+| `function` | SQL function | `{ "type": "function", "name": "NVL", "args": ["i.NOM", "?"] }` |
+| `case` | CASE WHEN expression | see above |
+| `raw` | Raw SQL expression | `{ "type": "raw", "sql": "COUNT(*)" }` |
+| `subquery` | Scalar subquery | `{ "type": "subquery", "query": { ... } }` |
+
+### Condition Types
+
+| Type | Description | Example |
+|---|---|---|
+| `simple` | Field operator value | `{ "type": "simple", "field": "i.STATUT", "op": "=", "value": "A" }` |
+| `and` | Logical AND | `{ "type": "and", "conditions": [...] }` |
+| `or` | Logical OR | `{ "type": "or", "conditions": [...] }` |
+| `in` | IN / NOT IN | `{ "type": "in", "field": "i.CODE", "values": ["A", "B"], "negated": false }` |
+| `is_null` | IS NULL / IS NOT NULL | `{ "type": "is_null", "field": "i.DATE", "negated": false }` |
+| `between` | BETWEEN | `{ "type": "between", "field": "d.ANNEE", "from": "2020", "to": "2024" }` |
+| `subquery_condition` | EXISTS / IN subquery | `{ "type": "subquery_condition", "op": "EXISTS", "query": { ... } }` |
+| `raw` | Raw SQL condition | `{ "type": "raw", "sql": "ROWNUM < 100" }` |
+
+### Bind Parameters
+
+Use `:paramName` syntax for bind parameters — they are passed through without quoting:
+
+```json
+{ "type": "simple", "field": "i.ANNEE", "op": ">=", "value": ":anneeMin" }
+```
+
+Generates: `i.ANNEE >= :anneeMin`
 
 ---
 
-## 👨‍💻 Author
+## Building from Source
 
-**Sam Bouchenafa**  
-Java Developer @ CNAV  
-GitHub: [@sambouch79](https://github.com/sambouch79)
+**Requirements:** Java 21, Maven 3.8+
 
-> "The difference between a POC and production code is the difference between proving it works and making it actually work." - Sam
+```bash
+git clone https://github.com/sambouch79/queryforge.git
+cd queryforge
+
+# Build all modules
+mvn install
+
+# Run tests
+mvn test
+
+# Build CLI fat JAR
+mvn package -pl queryforge-cli
+
+# Start the API in dev mode
+cd queryforge-api && mvn quarkus:dev
+```
 
 ---
 
-**Made with ❤️ and the determination to do it right** 🔥
+## Requirements
+
+- Java 21
+- Maven 3.8+
+- Quarkus 3.15+ (for the API module only)
+
+---
+
+## License
+
+Apache License 2.0 — see [LICENSE](LICENSE) for details.
+
+---
+
+## Author
+
+[Sam Bouche](https://github.com/sambouch79)
