@@ -57,7 +57,7 @@ public final class CaseField implements Field {
         whens.forEach(w -> sql.append("    ").append(w.toSQL()).append("\n"));
 
         if (elseValue != null) {
-            sql.append("    ELSE ").append(formatValue(elseValue)).append("\n");
+            sql.append("    ELSE ").append(ValueFormatter.format(elseValue)).append("\n");
         }
 
         sql.append("  END");

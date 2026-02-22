@@ -41,7 +41,7 @@ public final class SimpleCondition implements Condition {
 
     @Override
     public String toSQL() {
-        return field + " " + op + " " + formatValue(value);
+        return field + " " + op + " " + ValueFormatter.format(value);
     }
 
     @Override

@@ -32,7 +32,7 @@ public final class BetweenCondition implements Condition {
 
     @Override
     public String toSQL() {
-        return field + " BETWEEN " + formatValue(from) + " AND " + formatValue(to);
+        return field + " BETWEEN " + ValueFormatter.format(from) + " AND " + ValueFormatter.format(to);
     }
 
     @Override

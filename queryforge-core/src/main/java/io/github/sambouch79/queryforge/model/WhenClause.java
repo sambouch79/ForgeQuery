@@ -40,7 +40,7 @@ public class WhenClause {
     }
 
     public String toSQL() {
-        return "WHEN " + when.toSQL() + " THEN " + formatValue(then);
+        return "WHEN " + when.toSQL() + " THEN " + ValueFormatter.format(then);
     }
 
     private String formatValue(String val) {

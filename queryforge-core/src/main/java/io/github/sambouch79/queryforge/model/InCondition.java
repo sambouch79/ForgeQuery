@@ -44,7 +44,7 @@ public final class InCondition implements Condition {
         String operator = negated ? "NOT IN" : "IN";
 
         String formattedValues = values.stream()
-                .map(this::formatValue)
+                .map(ValueFormatter::format)
                 .collect(Collectors.joining(", "));
 
         return field + " " + operator + " (" + formattedValues + ")";

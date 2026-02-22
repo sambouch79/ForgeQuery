@@ -17,6 +17,7 @@
     <modules>
        <module>queryforge-core</module>
         <module>queryforge-cli</module>
+        <module>queryforge-api</module>
     </modules>
 
     <properties>
